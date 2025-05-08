@@ -12,6 +12,20 @@
 		<button id="submit">提取推荐词</button>
 	</div>
 
+	<div class="input-container">
+		<label for="mKey" class="label">采集层级:</label>
+		<div class="input-wrapper">
+			<div>
+				<input type="radio" id="level1" checked name="level" value="1">
+				<label for="level1">1级</label>
+				<input type="radio" id="level2" name="level" value="2">
+				<label for="level2">2级</label>
+				<input type="radio" id="level3" name="level" value="3">
+				<label for="level3">3级</label>
+			</div>
+		</div>
+	</div>
+
 	<div id="pageGptArticle" class="input-field" style="display: none">
 		<textarea id="pga_keywords" placeholder="请输入文章主题关键词或采集地址，多个请换行"></textarea> <!-- 修改：使用 textarea 元素 -->
 		<button id="pga_submit">添加关键词</button>
@@ -24,8 +38,7 @@
 			<button id="closePopupBtn" class="custom-popup-close-btn">确认</button>
 		</div>
 	</div>
-	<span id="openOptions" class="settings-icon">设置</span>
-	<span id="moreButton" class="more-icon">更多</span>
+
 </div>
 </body>
 <script type="text/javascript" src="js/jquery.min.js"></script>
