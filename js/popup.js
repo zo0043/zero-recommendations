@@ -3,6 +3,30 @@ let submitButton;
 let toolType = '';
 let createPrompt = '';
 
+// 监听来自content-script的采集结果
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    if (request.type === 'preview_data') {
+        console.log('收到预览数据:', request.data);
+        // 显示预览面板
+        showPreviewPanel(request.data);
+        // 启用提交按钮
+        if (submitButton) {
+            submitButton.disabled = false;
+        }
+        // 发送响应确认收到数据
+        if (sendResponse) {
+            sendResponse({status: 'success', message: '预览数据已接收'});
+        }
+        // 将预览数据转发回content-script以在页面中显示预览面板
+        chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+            chrome.tabs.sendMessage(tabs[0].id, { 
+                type: 'show_preview_panel',
+                data: request.data
+            });
+        });
+    }
+});
+
 document.addEventListener('DOMContentLoaded', function () {
     // 加载采集层级设置
     chrome.storage.local.get('setting', function (data) {
@@ -99,9 +123,17 @@ closeButton.addEventListener('click', closePopup);
  */
 function sendSearchMessage()
 {
+    // 获取当前采集层级
+    const selectedLevel = document.querySelector('input[name="level"]:checked').value;
+    
     // 向 content-scripts.js 发送消息，包含关键词信息
     chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { keywords: keywords,type:toolType});
+        chrome.tabs.sendMessage(tabs[0].id, { 
+            keywords: keywords,
+            type: toolType,
+            level: selectedLevel,
+            showPreview: true
+        });
     });
 }
 

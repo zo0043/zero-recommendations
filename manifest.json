@@ -38,9 +38,15 @@
 	"web_accessible_resources":
 	[
 		{
-			"resources" : ["css/gpt_keywords_list.css"],
+			"resources" : ["css/gpt_keywords_list.css", "js/preview-panel.js", "css/preview-panel.css"],
 			"matches": [
-				"*://chat.openai.com/*"
+				"*://chat.openai.com/*",
+				"*://www.xiaohongshu.com/*",
+				"*://www.douyin.com/*",
+				"*://www.bilibili.com/*",
+				"*://www.zhihu.com/*",
+				"*://www.baidu.com/*",
+				"*://www.google.com/*"
 			]
 		}
 	],

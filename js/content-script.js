@@ -1,5 +1,5 @@
 ﻿
-	let kwIndex = 0;
+let kwIndex = 0;
 	// 创建一个空字符串用于拼接 CSV 内容
 	let csvContent = "";
 	let keywords = '';
@@ -8,6 +8,50 @@
 	let collectLevel = 1;
 	let currentDomain = window.location.hostname;
 	let currentKeywords = "",currentKeywordsAliasTitle = '';
+	let showPreview = false;
+	
+	// 发送预览数据到popup
+	function sendPreviewData() {
+		const previewData = {
+			level: collectLevel,
+			keywords: collectKeywordList
+		};
+		
+		// 发送数据到popup
+		chrome.runtime.sendMessage({
+			type: 'preview_data',
+			data: previewData
+		});
+		
+		// 同时在当前页面显示预览面板
+		if (typeof showPreviewPanel === 'function') {
+			showPreviewPanel(previewData);
+		} else {
+			// 如果showPreviewPanel函数未定义，先加载脚本
+			loadPreviewPanelScript();
+			// 等待脚本加载完成后再显示预览面板
+			setTimeout(function() {
+				if (typeof showPreviewPanel === 'function') {
+					showPreviewPanel(previewData);
+				}
+			}, 500);
+		}
+	}
+	
+	// 动态加载preview-panel.js脚本
+	function loadPreviewPanelScript() {
+		const script = document.createElement('script');
+		script.src = chrome.runtime.getURL('js/preview-panel.js');
+		script.onload = function() {
+			console.log('preview-panel.js加载成功');
+			// 加载CSS
+			addStylesheet('css/preview-panel.css');
+		};
+		script.onerror = function() {
+			console.error('preview-panel.js加载失败');
+		};
+		document.head.appendChild(script);
+	}
 	let hasCompleteKeywords = [];
 	let noCompleteKeywords = [];
 	let statusMap = {0:"未处理",1:"已生成",2:"已发布",3:"生成中",4:"排队中",5:"采集完"};
@@ -19,6 +63,53 @@
 		const file = new Blob([content], {type: 'text/markdown'});
 		element.href = URL.createObjectURL(file);
 		element.download = "data(" + currentDomain+ ").md";
+		document.body.appendChild(element);
+		element.click();
+	};
+	
+	// 导出CSV文件
+	const downloadCSV = () => {
+		const element = document.createElement('a');
+		const file = new Blob([csvContent], {type: 'text/csv'});
+		element.href = URL.createObjectURL(file);
+		element.download = "keywords_" + currentDomain + ".csv";
+		document.body.appendChild(element);
+		element.click();
+	};
+	
+	// 导出思维导图（Markdown格式）
+	const downloadMindmap = () => {
+		// 创建思维导图内容（Markdown格式）
+		let mindmapContent = `# ${keywords} 关键词思维导图\n\n`;
+		
+		// 按层级组织关键词
+		const keywordsByLevel = {};
+		
+		collectKeywordList.forEach(item => {
+			const level = item[0];
+			const keyword = item[1];
+			
+			if (!keywordsByLevel[level]) {
+				keywordsByLevel[level] = [];
+			}
+			
+			keywordsByLevel[level].push(keyword);
+		});
+		
+		// 生成思维导图内容
+		Object.keys(keywordsByLevel).sort().forEach(level => {
+			mindmapContent += `\n## 第${level}级关键词\n\n`;
+			
+			keywordsByLevel[level].forEach(keyword => {
+				mindmapContent += `- ${keyword}\n`;
+			});
+		});
+		
+		// 下载思维导图文件
+		const element = document.createElement('a');
+		const file = new Blob([mindmapContent], {type: 'text/markdown'});
+		element.href = URL.createObjectURL(file);
+		element.download = "mindmap_" + currentDomain + ".md";
 		document.body.appendChild(element);
 		element.click();
 	};
@@ -130,13 +221,28 @@
 				}
 				console.log(text);
 			}
+			
+			// 如果启用了预览，发送数据到popup
+			if(showPreview) {
+				sendPreviewData();
+			}
+			
 			kwIndex++;
 			if(kwIndex >= keywordList.length)
 			{
-				let markdown = convertToXMindMarkdown(collectKeywordList);
-				downloadMarkdown(markdown);
-				console.log(markdown);
-				saveCsv(csvContent);
+				// 如果启用了预览，只发送预览数据，不自动下载文件
+				if(showPreview) {
+					console.log("采集完成，已发送预览数据");
+					// 确保最后一次发送完整的预览数据
+					sendPreviewData();
+					return;
+				} else {
+					// 如果没有启用预览，则按原来的方式下载文件
+					let markdown = convertToXMindMarkdown(collectKeywordList);
+					downloadMarkdown(markdown);
+					console.log(markdown);
+					saveCsv(csvContent);
+				}
 				return;
 			}
 			await searchByCharCode();
@@ -240,6 +346,12 @@
 			kwIndex = 0;
 			keywords = data.keywords;
 			keywordList = [];
+			// 设置是否显示预览
+			showPreview = data.showPreview || false;
+			// 设置采集层级
+			if (data.level) {
+				collectLevel = parseInt(data.level);
+			}
 			// 修改表头为 "推荐关键词"
 			let headers = ["层级","推荐关键词"];
 			csvContent += headers.join(",") + "\n";
@@ -262,6 +374,7 @@
 
 			console.log(keywordList);
 			console.log(kwIndex);
+			console.log("预览模式：" + (showPreview ? "开启" : "关闭"));
 			await searchByCharCode();
 			console.log("收集关键词数组：" + collectKeywordList);
 		}
@@ -594,7 +707,20 @@
 		console.log(message);
 		if(message.type == 'collect_search_keywords')
 		{
+			// 设置采集层级和预览标志
+			if (message.level) {
+				collectLevel = parseInt(message.level);
+			}
+			showPreview = message.showPreview || false;
 			collectSearchKeywords(message);
+		}
+		else if(message.type == "export_csv") {
+			// 导出CSV文件
+			downloadCSV();
+		}
+		else if(message.type == "export_mindmap") {
+			// 导出思维导图
+			downloadMindmap();
 		}
 		else if(message.type == 'chatgpt_create_article')
 		{
@@ -615,6 +741,18 @@
 			currentKeywordsAliasTitle = message.data.title;
 			updateKeywordsListItemElement(currentKeywords,{'title':currentKeywords,'alias_title':message.data.title,'status':5,'status_text':statusMap[5]});
 			sendCreatePrompt(1,message.data.content);
+		}
+		else if(message.type == 'show_preview_panel') {
+			// 在页面中显示预览面板
+			console.log('显示预览面板:', message.data);
+			// 调用preview-panel.js中的showPreviewPanel函数
+			if (typeof showPreviewPanel === 'function') {
+				showPreviewPanel(message.data);
+			} else {
+				console.error('showPreviewPanel函数未定义');
+				// 尝试加载preview-panel.js
+				loadPreviewPanelScript();
+			}
 		}
 	});
 
