@@ -9,48 +9,114 @@ let kwIndex = 0;
 	let currentDomain = window.location.hostname;
 	let currentKeywords = "",currentKeywordsAliasTitle = '';
 	let showPreview = false;
+
+	// For preview panel loading
+	let isPreviewPanelScriptInjected = false;
+	let isPreviewPanelScriptLoaded = false;
+	let pendingPreviewCallbacks = [];
 	
 	// 发送预览数据到popup
 	function sendPreviewData() {
-		const previewData = {
-			level: collectLevel,
-			keywords: collectKeywordList
-		};
-		
-		// 发送数据到popup
-		chrome.runtime.sendMessage({
-			type: 'preview_data',
-			data: previewData
-		});
-		
-		// 同时在当前页面显示预览面板
-		if (typeof showPreviewPanel === 'function') {
-			showPreviewPanel(previewData);
-		} else {
-			// 如果showPreviewPanel函数未定义，先加载脚本
-			loadPreviewPanelScript();
-			// 等待脚本加载完成后再显示预览面板
-			setTimeout(function() {
-				if (typeof showPreviewPanel === 'function') {
-					showPreviewPanel(previewData);
-				}
-			}, 500);
-		}
+	    const previewData = {
+	        level: collectLevel,
+	        keywords: collectKeywordList
+	    };
+
+	    // 发送数据到popup
+	    chrome.runtime.sendMessage({
+	        type: 'preview_data',
+	        data: previewData
+	    });
+
+	    // 同时在当前页面显示预览面板, 前提是 showPreview 为 true
+	    if (showPreview) {
+	        ensurePreviewPanelLoaded(function(error) { // Changed from loadPreviewPanelScript
+	            if (error) {
+	                console.error('Error loading preview panel:', error.message);
+	                return;
+	            }
+	            // At this point, showPreviewPanel should be available
+	            if (typeof showPreviewPanel === 'function') {
+	                showPreviewPanel(previewData);
+	            } else {
+	                // This should ideally not happen if ensurePreviewPanelLoaded works
+	                console.error('showPreviewPanel still not available after ensurePreviewPanelLoaded callback.');
+	            }
+	        });
+	    } else {
+	        // console.log('Preview is disabled by showPreview flag. Not showing panel.');
+	    }
 	}
 	
-	// 动态加载preview-panel.js脚本
-	function loadPreviewPanelScript() {
-		const script = document.createElement('script');
-		script.src = chrome.runtime.getURL('js/preview-panel.js');
-		script.onload = function() {
-			console.log('preview-panel.js加载成功');
-			// 加载CSS
-			addStylesheet('css/preview-panel.css');
-		};
-		script.onerror = function() {
-			console.error('preview-panel.js加载失败');
-		};
-		document.head.appendChild(script);
+	// 动态加载CSS样式表
+	function addStylesheet(cssPath) {
+		const cssUrl = chrome.runtime.getURL(cssPath);
+		if (document.querySelector(`link[rel="stylesheet"][href="${cssUrl}"]`)) {
+			// console.log(`${cssPath} stylesheet already exists.`);
+			return;
+		}
+		const link = document.createElement('link');
+		link.rel = 'stylesheet';
+		link.type = 'text/css';
+		link.href = cssUrl;
+		document.head.appendChild(link);
+		// console.log(`${cssPath} stylesheet added.`);
+	}
+	
+	// 动态加载preview-panel.js脚本和CSS，并执行回调
+	function ensurePreviewPanelLoaded(callback) {
+	    // Callback signature: callback(error)
+
+	    // 1. Load CSS (idempotent)
+	    if (typeof addStylesheet === 'function') {
+	        addStylesheet('css/preview-panel.css');
+	    } else {
+	        console.error('addStylesheet function is not defined.');
+	        if (typeof callback === 'function') callback(new Error('addStylesheet missing'));
+	        return;
+	    }
+
+	    // 2. If already loaded and function available
+	    if (isPreviewPanelScriptLoaded && typeof showPreviewPanel === 'function') {
+	        if (typeof callback === 'function') callback(null);
+	        return;
+	    }
+
+	    // 3. If currently injecting/loading, add to queue
+	    if (isPreviewPanelScriptInjected && !isPreviewPanelScriptLoaded) {
+	        if (typeof callback === 'function') pendingPreviewCallbacks.push(callback);
+	        return;
+	    }
+
+	    // 4. If not injected yet, inject it
+	    if (!isPreviewPanelScriptInjected) {
+	        isPreviewPanelScriptInjected = true; // Mark as "injection process started"
+	        if (typeof callback === 'function') pendingPreviewCallbacks.push(callback);
+
+	        const script = document.createElement('script');
+	        script.src = chrome.runtime.getURL('js/preview-panel.js');
+	        
+	        script.onload = () => {
+	            // console.log('preview-panel.js loaded successfully.');
+	            if (typeof showPreviewPanel === 'function') {
+	                isPreviewPanelScriptLoaded = true;
+	                pendingPreviewCallbacks.forEach(cb => cb(null));
+	            } else {
+	                console.error('preview-panel.js loaded, but showPreviewPanel is not defined.');
+	                pendingPreviewCallbacks.forEach(cb => cb(new Error('showPreviewPanel not defined post-load')));
+	            }
+	            pendingPreviewCallbacks = []; // Clear queue
+	        };
+	        
+	        script.onerror = () => {
+	            console.error('preview-panel.js failed to load.');
+	            isPreviewPanelScriptInjected = false; // Allow re-attempt if needed
+	            pendingPreviewCallbacks.forEach(cb => cb(new Error('preview-panel.js load failed')));
+	            pendingPreviewCallbacks = []; // Clear queue
+	        };
+	        
+	        document.head.appendChild(script);
+	    }
 	}
 	let hasCompleteKeywords = [];
 	let noCompleteKeywords = [];
@@ -377,6 +443,7 @@ let kwIndex = 0;
 			console.log("预览模式：" + (showPreview ? "开启" : "关闭"));
 			await searchByCharCode();
 			console.log("收集关键词数组：" + collectKeywordList);
+			sendPreviewData(); // 确保在采集完成后调用，以显示预览面板
 		}
 	}
 	
