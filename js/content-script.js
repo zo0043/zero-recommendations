@@ -130,34 +130,30 @@
         
         // 查找是否有提取窗口ID
         chrome.storage.local.get('current_extraction', function(data) {
-            // 提取窗口ID存在且有效
-            if (data && data.current_extraction && data.current_extraction.windowId) {
-                console.log('向提取窗口发送数据，窗口ID:', data.current_extraction.windowId);
-                try {
-                    // 发送到background.js转发
-                    chrome.runtime.sendMessage({
-                        type: 'preview_data',
-                        data: previewData,
-                        extractWindowId: data.current_extraction.windowId
-                    }, function(response) {
-                        // 检查发送消息是否成功
-                        if (chrome.runtime.lastError) {
-                            console.error('向提取窗口发送数据失败:', chrome.runtime.lastError);
-                        } else {
-                            console.log('向提取窗口发送数据成功, 响应:', response);
-                        }
+            // 更新状态为已完成（如果数据已收集）
+            if (data && data.current_extraction) {
+                // 如果已收集到关键词数据，标记为已完成
+                if (collectKeywordList && collectKeywordList.length > 0) {
+                    data.current_extraction.status = 'completed';
+                    data.current_extraction.result = previewData;
+                    chrome.storage.local.set({ 'current_extraction': data.current_extraction }, function() {
+                        console.log('提取状态已更新为completed');
                     });
-                } catch (e) {
-                    console.error('发送数据到提取窗口时出错:', e);
                 }
-            } else {
-                console.log('没有找到提取窗口ID，向popup发送数据');
-                // 向popup发送消息
-                chrome.runtime.sendMessage({
-                    type: 'preview_data',
-                    data: previewData
-                });
             }
+        
+            // 直接向popup发送消息，统一界面将处理
+            chrome.runtime.sendMessage({
+                type: 'preview_data',
+                data: previewData
+            }, function(response) {
+                // 检查发送消息是否成功
+                if (chrome.runtime.lastError) {
+                    console.error('向统一界面发送数据失败:', chrome.runtime.lastError);
+                } else {
+                    console.log('向统一界面发送数据成功, 响应:', response);
+                }
+            });
             
             // 如果 showPreview 为 true，则直接显示预览面板
             if (showPreview) {
@@ -414,6 +410,16 @@
 			kwIndex++;
 			if(kwIndex >= keywordList.length)
 			{
+				// 更新提取状态为已完成
+				chrome.storage.local.get('current_extraction', function(data) {
+					if (data && data.current_extraction) {
+						data.current_extraction.status = 'completed';
+						chrome.storage.local.set({ 'current_extraction': data.current_extraction }, function() {
+							console.log('提取状态已更新为completed');
+						});
+					}
+				});
+				
 				// 如果启用了预览，只发送预览数据，不自动下载文件
 				if(showPreview) {
 					console.log("采集完成，已发送预览数据");

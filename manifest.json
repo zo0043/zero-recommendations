@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "搜索推荐词采集与内容生成助手",
-	"version": "1.2",
+	"version": "1.3",
 	"description": "提取小红书、抖音、B站、知乎、百度、google搜索推荐词，chatgpt关键词自动化内容生产",
 	"author": "niemingxing",
 	"icons":
@@ -12,8 +12,8 @@
 	},
 	"action":
 	{
-		"default_icon": "icon16.png",
-		"default_popup": "popup.html"
+		"default_icon": "icon48.png",
+		"default_popup": "unified-extract.html"
 	},
 	"options_page": "options.html",
 	"background":
@@ -38,7 +38,7 @@
 	"web_accessible_resources":
 	[
 		{
-			"resources" : ["css/gpt_keywords_list.css", "js/preview-panel.js", "css/preview-panel.css", "extract.html", "js/extract.js"],
+			"resources" : ["css/gpt_keywords_list.css", "js/preview-panel.js", "css/preview-panel.css", "extract.html", "js/extract.js", "unified-extract.html", "js/unified-extract.js"],
 			"matches": [
 				"*://chat.openai.com/*",
 				"*://www.xiaohongshu.com/*",

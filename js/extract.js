@@ -1,6 +1,7 @@
 // 提取状态和数据
 let extractionData = null;
 let targetTabId = null;
+let extractionTimeout = null;
 
 // 初始化页面
 document.addEventListener('DOMContentLoaded', function() {
@@ -19,6 +20,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     extractionData = data.current_extraction;
                     // 显示源关键词
                     document.getElementById('sourceKeyword').textContent = extractionData.keywords;
+                    
+                    // 检查是否已经有结果
+                    if (extractionData.status === 'completed' && extractionData.result) {
+                        showResults(extractionData.result);
+                    } else {
+                        // 设置提取超时计时器 (30秒)
+                        setExtractionTimeout();
+                    }
+                    
                     resolve();
                 } else {
                     showError('没有找到提取参数，请重新打开扩展。');
@@ -43,7 +53,47 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('exportCSV').addEventListener('click', exportCSV);
     document.getElementById('exportMindmap').addEventListener('click', exportMindmap);
     document.getElementById('newExtraction').addEventListener('click', openNewExtraction);
+    
+    // 定期检查提取状态
+    setInterval(checkExtractionStatus, 3000);
 });
+
+// 设置提取超时
+function setExtractionTimeout() {
+    // 清除现有的超时计时器
+    if (extractionTimeout) {
+        clearTimeout(extractionTimeout);
+    }
+    
+    // 设置新的超时计时器 (30秒)
+    extractionTimeout = setTimeout(function() {
+        // 检查当前状态
+        chrome.storage.local.get('current_extraction', function(data) {
+            if (data && data.current_extraction) {
+                // 如果状态仍为pending或processing，则视为超时
+                if (data.current_extraction.status === 'pending' || 
+                    data.current_extraction.status === 'processing') {
+                    showError('提取超时，请重试。可能是网络问题或页面未正确加载。');
+                }
+            }
+        });
+    }, 30000);
+}
+
+// 定期检查提取状态
+function checkExtractionStatus() {
+    chrome.storage.local.get('current_extraction', function(data) {
+        if (data && data.current_extraction) {
+            // 如果状态已更新为completed，但UI没有更新
+            if (data.current_extraction.status === 'completed' && 
+                data.current_extraction.result &&
+                !document.getElementById('statusContainer').classList.contains('hidden')) {
+                console.log('检测到已完成状态，更新UI');
+                showResults(data.current_extraction.result);
+            }
+        }
+    });
+}
 
 // 监听来自content-script的消息
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
@@ -51,6 +101,12 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     
     if (request.type === 'preview_data') {
         console.log('提取窗口收到预览数据:', request.data);
+        
+        // 清除超时计时器
+        if (extractionTimeout) {
+            clearTimeout(extractionTimeout);
+            extractionTimeout = null;
+        }
         
         // 更新提取状态
         if (extractionData) {

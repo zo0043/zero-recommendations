@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>搜索推荐词提取中</title>
+    <title>搜索推荐词采集助手</title>
     <link rel="stylesheet" href="css/theme.css">
     <link rel="stylesheet" href="css/popup.css">
     <link rel="stylesheet" href="css/preview-panel.css">
@@ -10,7 +10,7 @@
         body {
             width: 100%;
             min-width: 400px;
-            max-width: 600px;
+            max-width: 550px;
             padding: 0.75rem;
             margin: 0 auto;
             background-color: var(--bg-color);
@@ -48,13 +48,98 @@
             color: white;
             margin: 0;
         }
+
+        /* 页面容器 */
+        .page {
+            padding: 1rem;
+            transition: all var(--transition-normal);
+        }
+        
+        /* 输入页面 */
+        #inputPage {
+            display: block;
+        }
+        
+        .input-field {
+            margin-bottom: 1rem;
+        }
+        
+        .input-field textarea {
+            width: 100%;
+            resize: vertical;
+            min-height: 80px;
+            margin-bottom: 0.75rem;
+            border-radius: var(--radius-md);
+            padding: 0.75rem;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-fast);
+            font-size: 0.9rem;
+        }
+        
+        .input-field textarea:focus {
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+        
+        .level-selector {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: var(--radius-md);
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+        }
+        
+        .level-selector .label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-color);
+            font-size: 0.9rem;
+        }
+        
+        .radio-wrapper {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .radio-wrapper label {
+            margin-right: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        #startExtractionBtn {
+            width: 100%;
+            padding: 0.75rem;
+            font-weight: 600;
+            border-radius: var(--radius-md);
+            background-color: var(--primary-color);
+            color: white;
+            transition: all var(--transition-fast);
+            cursor: pointer;
+        }
+        
+        #startExtractionBtn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+        
+        #startExtractionBtn:disabled {
+            background-color: var(--text-light);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* 状态页面 */
+        #statusPage {
+            display: none;
+        }
         
         #statusContainer {
             margin: 1rem auto;
             padding: 1.5rem 1rem;
-            width: 90%;
             border-radius: var(--radius-md);
-            background-color: var(--bg-card);
+            background-color: var(--bg-color);
             border: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
@@ -113,15 +198,27 @@
             z-index: 1;
         }
         
-        #resultContainer {
-            padding: 1rem;
-            margin: 0;
-            background-color: var(--bg-card);
-            border: none;
-            box-shadow: none;
+        #cancelExtractionBtn {
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            font-size: 0.9rem;
         }
         
-        #resultContainer h3 {
+        #cancelExtractionBtn:hover {
+            background-color: var(--border-color);
+        }
+        
+        /* 结果页面 */
+        #resultPage {
+            display: none;
+        }
+        
+        #resultPage h3 {
             margin-top: 0;
             margin-bottom: 1rem;
             color: var(--primary-dark);
@@ -130,19 +227,19 @@
             font-size: 1.1rem;
         }
         
-        .level-info, .source-info {
+        .info-item {
             margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
         }
         
-        .level-info strong, .source-info strong {
+        .info-item strong {
             min-width: 90px;
             display: inline-block;
             font-size: 0.9rem;
         }
         
-        #resultLevel {
+        .info-value {
             display: inline-block;
             padding: 0.15rem 0.5rem;
             background-color: rgba(59, 130, 246, 0.1);
@@ -152,14 +249,8 @@
             font-size: 0.9rem;
         }
         
-        #sourceKeyword {
-            font-weight: 500;
-            color: var(--primary-dark);
-            font-size: 0.9rem;
-        }
-        
         .result-list {
-            max-height: 280px;
+            max-height: 250px;
             overflow-y: auto;
             margin: 0.75rem 0;
             padding: 0.5rem;
@@ -199,10 +290,12 @@
             font-weight: 500;
             border-radius: var(--radius-md);
             font-size: 0.9rem;
+            cursor: pointer;
         }
         
         #exportCSV, #exportMindmap {
             background-color: var(--primary-color);
+            color: white;
         }
         
         #exportCSV:hover, #exportMindmap:hover {
@@ -233,6 +326,50 @@
             border-top-color: var(--error);
         }
         
+        /* 弹窗样式 */
+        .custom-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+        }
+        
+        .custom-popup-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(3px);
+        }
+        
+        .custom-popup-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            max-width: 80%;
+            text-align: center;
+        }
+        
+        .custom-popup-question {
+            display: block;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+        
+        .custom-popup-close-btn {
+            padding: 0.5rem 1.5rem;
+        }
+        
         /* 响应式调整 */
         @media (max-width: 576px) {
             body {
@@ -249,23 +386,57 @@
     <div class="container">
         <div class="header">
             <img src="icon48.png" alt="Logo" class="header-icon">
-            <h1 class="header-title">搜索推荐词采集</h1>
+            <h1 class="header-title">搜索推荐词采集助手</h1>
         </div>
         
-        <div id="statusContainer">
-            <div class="spinner pulse"></div>
-            <div id="statusText">正在提取关键词...</div>
-        </div>
-        
-        <div id="resultContainer" class="hidden">
-            <h3>采集结果</h3>
-            
-            <div class="level-info">
-                <strong>采集层级：</strong><span id="resultLevel" class="badge badge-info"></span>
+        <!-- 输入页面 -->
+        <div id="inputPage" class="page">
+            <div class="input-field">
+                <textarea id="keywords" placeholder="请输入关键词,支持换行输入多关键词,关键词出现占位符{c},自动替换为[A-Z]的推荐词搜索，当前支持抖音、小红书、B站、知乎、百度、google"></textarea>
             </div>
             
-            <div class="source-info">
-                <strong>搜索关键词：</strong><span id="sourceKeyword"></span>
+            <div class="level-selector">
+                <label class="label">采集层级:</label>
+                <div class="radio-wrapper">
+                    <div>
+                        <input type="radio" id="level1" checked name="level" value="1">
+                        <label for="level1">1级</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="level2" name="level" value="2">
+                        <label for="level2">2级</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="level3" name="level" value="3">
+                        <label for="level3">3级</label>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="startExtractionBtn" class="pulse">开始提取</button>
+        </div>
+        
+        <!-- 状态页面 -->
+        <div id="statusPage" class="page">
+            <div id="statusContainer">
+                <div class="spinner pulse"></div>
+                <div id="statusText">正在提取关键词...</div>
+                <button id="cancelExtractionBtn">取消提取</button>
+            </div>
+        </div>
+        
+        <!-- 结果页面 -->
+        <div id="resultPage" class="page">
+            <h3>采集结果</h3>
+            
+            <div class="info-item">
+                <strong>采集层级：</strong>
+                <span id="resultLevel" class="info-value"></span>
+            </div>
+            
+            <div class="info-item">
+                <strong>搜索关键词：</strong>
+                <span id="sourceKeyword"></span>
             </div>
             
             <div class="result-list" id="keywordsList">
@@ -284,9 +455,18 @@
                 <button id="newExtraction">新的提取</button>
             </div>
         </div>
+        
+        <!-- 弹窗 -->
+        <div id="popup" class="custom-popup">
+            <div class="custom-popup-overlay"></div>
+            <div class="custom-popup-content">
+                <span id="message" class="custom-popup-question"></span>
+                <button id="closePopupBtn" class="custom-popup-close-btn">确认</button>
+            </div>
+        </div>
     </div>
     
     <script src="js/jquery.min.js"></script>
-    <script src="js/extract.js"></script>
+    <script src="js/unified-extract.js"></script>
 </body>
 </html> 

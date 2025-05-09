@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 - 深色渐变背景带有微妙的径向渐变 -->
+  <rect width="128" height="128" rx="28" fill="url(#paint0_radial)" />
+  
+  <!-- 前景图形 - 抽象搜索和数据采集符号 -->
+  <g filter="url(#blur_effect)">
+    <!-- 搜索镜图标元素 -->
+    <circle cx="53" cy="53" r="20" stroke="#7BE0FF" stroke-width="6" stroke-opacity="0.9" />
+    <line x1="68" y1="68" x2="83" y2="83" stroke="#7BE0FF" stroke-width="6" stroke-linecap="round" stroke-opacity="0.9" />
+    
+    <!-- 数据流线条 -->
+    <path d="M83 45 H105" stroke="#7BE0FF" stroke-width="3" stroke-linecap="round" stroke-opacity="0.7">
+      <animate attributeName="stroke-opacity" values="0.7;0.9;0.7" dur="3s" repeatCount="indefinite" />
+    </path>
+    <path d="M75 60 H105" stroke="#7BE0FF" stroke-width="3" stroke-linecap="round" stroke-opacity="0.7">
+      <animate attributeName="stroke-opacity" values="0.7;0.9;0.7" dur="3s" repeatCount="indefinite" begin="0.5s" />
+    </path>
+    <path d="M83 75 H105" stroke="#7BE0FF" stroke-width="3" stroke-linecap="round" stroke-opacity="0.7">
+      <animate attributeName="stroke-opacity" values="0.7;0.9;0.7" dur="3s" repeatCount="indefinite" begin="1s" />
+    </path>
+    
+    <!-- 关键词标签 -->
+    <rect x="33" y="93" width="63" height="18" rx="5" stroke="#7BE0FF" stroke-width="2.5" stroke-opacity="0.8" />
+    <path d="M43 102 H86" stroke="#7BE0FF" stroke-width="2.5" stroke-linecap="round" stroke-opacity="0.8" />
+  </g>
+  
+  <!-- 光晕效果 -->
+  <circle cx="53" cy="53" r="10" fill="#7BE0FF" fill-opacity="0.15">
+    <animate attributeName="r" values="10;12;10" dur="4s" repeatCount="indefinite" />
+    <animate attributeName="fill-opacity" values="0.15;0.25;0.15" dur="4s" repeatCount="indefinite" />
+  </circle>
+  
+  <!-- 渐变和滤镜定义 -->
+  <defs>
+    <radialGradient id="paint0_radial" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(64 64) rotate(90) scale(64)">
+      <stop offset="0" stop-color="#1E3A8A" />
+      <stop offset="1" stop-color="#0F172A" />
+    </radialGradient>
+    <filter id="blur_effect" x="0" y="0" width="128" height="128" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix" />
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1" />
+      <feComposite in2="hardAlpha" operator="out" />
+      <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow" />
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape" />
+    </filter>
+  </defs>
+</svg> 
