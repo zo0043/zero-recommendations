@@ -5,7 +5,7 @@ let toolType = '';
 // 存储预览数据
 let previewData = null;
 
-// 监听来自content-script的采集结果
+// 监听来自background.js和content-script的消息
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (request.type === 'preview_data') {
         console.log('收到预览数据:', request.data);
@@ -13,9 +13,11 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         // 存储预览数据
         previewData = request.data;
         
-        // 隐藏提取状态，显示展示结果按钮
+        // 隐藏提取状态
         document.getElementById('extraction-status').style.display = 'none';
-        document.getElementById('show-results').style.display = 'block';
+        
+        // 显示结果页面
+        displayResults(request.data);
         
         // 启用提交按钮
         if (submitButton) {
@@ -26,21 +28,59 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         if (sendResponse) {
             sendResponse({status: 'success', message: '预览数据已接收'});
         }
+    } else if (request.type === 'popup_still_open') {
+        // 接收到background.js发送的保持popup打开的消息
+        console.log('保持popup打开');
+        if (sendResponse) {
+            sendResponse({status: 'success'});
+        }
     }
 });
 
+// 显示结果页面
+function displayResults(data) {
+    // 切换到结果页面
+    document.getElementById('inputPage').style.display = 'none';
+    document.getElementById('resultsPage').style.display = 'block';
+    
+    // 更新层级信息
+    document.getElementById('result-level').textContent = data.level || '1';
+    
+    // 更新关键词列表
+    const keywordsList = document.getElementById('result-keywords-list');
+    keywordsList.innerHTML = '';
+    
+    if (data.keywords && data.keywords.length > 0) {
+        data.keywords.forEach(keyword => {
+            const keywordItem = document.createElement('div');
+            keywordItem.className = 'keyword-item';
+            keywordItem.textContent = keyword[1]; // 关键词格式为 [level, keyword]
+            keywordsList.appendChild(keywordItem);
+        });
+    } else {
+        keywordsList.innerHTML = '<p>暂无采集结果</p>';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
-    // 添加展示结果按钮点击事件
-    document.getElementById('show-results').addEventListener('click', function() {
-        if (previewData) {
-            // 将预览数据转发回content-script以在页面中显示预览面板
-            chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-                chrome.tabs.sendMessage(tabs[0].id, { 
-                    type: 'show_preview_panel',
-                    data: previewData
-                });
-            });
-        }
+    // 绑定返回输入页面按钮事件
+    document.querySelector('.back-to-input').addEventListener('click', function() {
+        document.getElementById('resultsPage').style.display = 'none';
+        document.getElementById('inputPage').style.display = 'block';
+    });
+    
+    // 导出CSV按钮点击事件
+    document.getElementById('export-csv').addEventListener('click', function() {
+        chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+            chrome.tabs.sendMessage(tabs[0].id, { type: 'export_csv' });
+        });
+    });
+    
+    // 导出思维导图按钮点击事件
+    document.getElementById('export-mindmap').addEventListener('click', function() {
+        chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+            chrome.tabs.sendMessage(tabs[0].id, { type: 'export_mindmap' });
+        });
     });
     
     // 加载采集层级设置
@@ -98,9 +138,6 @@ document.addEventListener('DOMContentLoaded', function () {
         $("#pga_keywords").val(data.pga_keywords);
     });
 
-
-
-
     // 获取当前标签页的 URL
     chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
         var currentUrl = tabs[0].url;
@@ -149,17 +186,40 @@ function sendSearchMessage()
     // 获取当前采集层级
     const selectedLevel = document.querySelector('input[name="level"]:checked').value;
     
-    // 显示提取状态
-    document.getElementById('extraction-status').style.display = 'block';
-    document.getElementById('status-text').textContent = '提取中...';
-    
-    // 向 content-scripts.js 发送消息，包含关键词信息
-    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { 
+    // 存储当前提取参数
+    chrome.storage.local.set({
+        'current_extraction': {
             keywords: keywords,
-            type: toolType,
             level: selectedLevel,
-            showPreview: false // 修改为false，不自动显示预览面板
+            type: toolType,
+            timestamp: Date.now(),
+            status: 'pending'
+        }
+    }, function() {
+        // 获取当前标签页，用于后续向其发送提取请求
+        chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+            if (tabs && tabs.length > 0) {
+                // 保存标签页ID
+                chrome.storage.local.set({ 'active_tab_id': tabs[0].id }, function() {
+                    // 创建并打开提取状态窗口
+                    chrome.windows.create({
+                        url: chrome.runtime.getURL("extract.html"),
+                        type: "popup",
+                        width: 450,
+                        height: 600,
+                        left: 100,
+                        top: 100
+                    });
+                    
+                    // 关闭当前popup
+                    window.close();
+                });
+            } else {
+                showPopup("无法获取当前页面，请重试。");
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+            }
         });
     });
 }

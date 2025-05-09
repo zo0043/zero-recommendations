@@ -1,5 +1,4 @@
-﻿
-let kwIndex = 0;
+﻿let kwIndex = 0;
 	// 创建一个空字符串用于拼接 CSV 内容
 	let csvContent = "";
 	let keywords = '';
@@ -12,6 +11,8 @@ let kwIndex = 0;
 
 	// 监听来自popup的消息
 	chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+		console.log('收到消息:', request);
+		
 		if (request.type === 'show_preview_panel' && request.data) {
 			// 确保预览面板脚本已加载，然后显示预览面板
 			ensurePreviewPanelLoaded(function(error) {
@@ -29,7 +30,90 @@ let kwIndex = 0;
 			if (sendResponse) {
 				sendResponse({status: 'success', message: '预览面板已显示'});
 			}
+		} else if (request.keywords && (request.type === 'collect_search_keywords' || request.type === 'chatgpt_create_article')) {
+			// 如果是提取关键词请求
+			console.log('收到提取关键词请求:', request);
+			
+			try {
+				// 保存请求参数
+				keywords = request.keywords;
+				collectLevel = parseInt(request.level) || 1;
+				showPreview = !!request.showPreview;
+				
+				// 如果有提取窗口ID，保存到storage中
+				if (request.extractWindowId) {
+					chrome.storage.local.set({
+						'current_extraction': {
+							windowId: request.extractWindowId,
+							keywords: request.keywords,
+							level: request.level,
+							type: request.type,
+							status: 'processing'
+						}
+					}, function() {
+						console.log('提取参数已保存到storage');
+					});
+				}
+				
+				// 根据类型执行不同的提取操作
+				if (request.type === 'collect_search_keywords') {
+					// 收集搜索关键词
+					keywordList = keywords.trim().split("\n");
+					collectKeywordList = [];
+					collectSearchKeywords(keywordList);
+					
+					if (sendResponse) {
+						sendResponse({status: 'success', message: '开始提取搜索关键词'});
+					}
+				} else if (request.type === 'chatgpt_create_article') {
+					// ChatGPT文章创建
+					chatGptCreateArticle(keywords);
+					
+					if (sendResponse) {
+						sendResponse({status: 'success', message: '开始创建ChatGPT文章'});
+					}
+				}
+			} catch (e) {
+				console.error('处理提取请求时出错:', e);
+				if (sendResponse) {
+					sendResponse({status: 'error', message: '处理提取请求时出错: ' + e.message});
+				}
+			}
+		} else if (request.type === 'export_csv') {
+			// 导出CSV
+			try {
+				downloadCSV();
+				if (sendResponse) {
+					sendResponse({status: 'success', message: 'CSV已导出'});
+				}
+			} catch (e) {
+				console.error('导出CSV时出错:', e);
+				if (sendResponse) {
+					sendResponse({status: 'error', message: '导出CSV时出错: ' + e.message});
+				}
+			}
+		} else if (request.type === 'export_mindmap') {
+			// 导出思维导图
+			try {
+				downloadMindmap();
+				if (sendResponse) {
+					sendResponse({status: 'success', message: '思维导图已导出'});
+				}
+			} catch (e) {
+				console.error('导出思维导图时出错:', e);
+				if (sendResponse) {
+					sendResponse({status: 'error', message: '导出思维导图时出错: ' + e.message});
+				}
+			}
+		} else {
+			// 未知消息类型
+			if (sendResponse) {
+				sendResponse({status: 'error', message: '未知的消息类型: ' + request.type});
+			}
 		}
+		
+		// 确保返回true以支持异步响应
+		return true;
 	});
 
 	// For preview panel loading
@@ -37,23 +121,49 @@ let kwIndex = 0;
 	let isPreviewPanelScriptLoaded = false;
 	let pendingPreviewCallbacks = [];
 	
-	// 发送预览数据到popup
+	// 发送预览数据到popup或提取窗口
 	function sendPreviewData() {
 	    const previewData = {
 	        level: collectLevel,
 	        keywords: collectKeywordList
 	    };
-
-	    // 发送数据到popup
-	    chrome.runtime.sendMessage({
-	        type: 'preview_data',
-	        data: previewData
-	    });
-
-	    // 如果 showPreview 为 true，则直接显示预览面板
-	    if (showPreview) {
-	        showPreviewPanel(previewData);
-	    }
+        
+        // 查找是否有提取窗口ID
+        chrome.storage.local.get('current_extraction', function(data) {
+            // 提取窗口ID存在且有效
+            if (data && data.current_extraction && data.current_extraction.windowId) {
+                console.log('向提取窗口发送数据，窗口ID:', data.current_extraction.windowId);
+                try {
+                    // 发送到background.js转发
+                    chrome.runtime.sendMessage({
+                        type: 'preview_data',
+                        data: previewData,
+                        extractWindowId: data.current_extraction.windowId
+                    }, function(response) {
+                        // 检查发送消息是否成功
+                        if (chrome.runtime.lastError) {
+                            console.error('向提取窗口发送数据失败:', chrome.runtime.lastError);
+                        } else {
+                            console.log('向提取窗口发送数据成功, 响应:', response);
+                        }
+                    });
+                } catch (e) {
+                    console.error('发送数据到提取窗口时出错:', e);
+                }
+            } else {
+                console.log('没有找到提取窗口ID，向popup发送数据');
+                // 向popup发送消息
+                chrome.runtime.sendMessage({
+                    type: 'preview_data',
+                    data: previewData
+                });
+            }
+            
+            // 如果 showPreview 为 true，则直接显示预览面板
+            if (showPreview) {
+                showPreviewPanel(previewData);
+            }
+        });
 	}
 	
 	// 动态加载CSS样式表

@@ -5,35 +5,81 @@
 	<title>搜索推荐词采集助手</title>
 	<link rel="stylesheet" href="css/popup.css">
 	<link rel="stylesheet" href="css/preview-panel.css">
+	<style>
+		/* 添加状态管理相关样式 */
+		.page-container {
+			width: 100%;
+			overflow: hidden;
+		}
+		.page {
+			transition: transform 0.3s ease;
+		}
+		#resultsPage {
+			height: 400px;
+			overflow-y: auto;
+			display: none;
+		}
+		.keyword-item {
+			margin: 5px 0;
+			padding: 5px;
+			border-bottom: 1px solid #eee;
+		}
+		.back-to-input {
+			margin-top: 10px;
+			background-color: #f1f1f1;
+			border: none;
+			padding: 5px 10px;
+			cursor: pointer;
+		}
+	</style>
 </head>
 <body>
 <div class="container">
-	<div id="pageSearchKeywords" class="input-field">
-		<textarea id="keywords" placeholder="请输入关键词,支持换行输入多关键词,关键词出现占位符{c},自动替换为[A-Z]的推荐词搜索，当前支持抖音、小红书、B站、知乎、百度、google"></textarea> <!-- 修改：使用 textarea 元素 -->
-		<button id="submit">提取推荐词</button>
-		<div id="extraction-status" style="display: none; margin-top: 10px;">
-			<span id="status-text">提取中...</span>
-		</div>
-		<button id="show-results" style="display: none; margin-top: 10px;">展示结果</button>
-	</div>
-
-	<div class="input-container">
-		<label for="mKey" class="label">采集层级:</label>
-		<div class="input-wrapper">
-			<div>
-				<input type="radio" id="level1" checked name="level" value="1">
-				<label for="level1">1级</label>
-				<input type="radio" id="level2" name="level" value="2">
-				<label for="level2">2级</label>
-				<input type="radio" id="level3" name="level" value="3">
-				<label for="level3">3级</label>
+	<!-- 输入页面 -->
+	<div id="inputPage" class="page">
+		<div id="pageSearchKeywords" class="input-field">
+			<textarea id="keywords" placeholder="请输入关键词,支持换行输入多关键词,关键词出现占位符{c},自动替换为[A-Z]的推荐词搜索，当前支持抖音、小红书、B站、知乎、百度、google"></textarea> <!-- 修改：使用 textarea 元素 -->
+			<button id="submit">提取推荐词</button>
+			<div id="extraction-status" style="display: none; margin-top: 10px;">
+				<span id="status-text">提取中...</span>
 			</div>
 		</div>
+
+		<div class="input-container">
+			<label for="mKey" class="label">采集层级:</label>
+			<div class="input-wrapper">
+				<div>
+					<input type="radio" id="level1" checked name="level" value="1">
+					<label for="level1">1级</label>
+					<input type="radio" id="level2" name="level" value="2">
+					<label for="level2">2级</label>
+					<input type="radio" id="level3" name="level" value="3">
+					<label for="level3">3级</label>
+				</div>
+			</div>
+		</div>
+
+		<div id="pageGptArticle" class="input-field" style="display: none">
+			<textarea id="pga_keywords" placeholder="请输入文章主题关键词或采集地址，多个请换行"></textarea> <!-- 修改：使用 textarea 元素 -->
+			<button id="pga_submit">添加关键词</button>
+		</div>
 	</div>
 
-	<div id="pageGptArticle" class="input-field" style="display: none">
-		<textarea id="pga_keywords" placeholder="请输入文章主题关键词或采集地址，多个请换行"></textarea> <!-- 修改：使用 textarea 元素 -->
-		<button id="pga_submit">添加关键词</button>
+	<!-- 结果页面 -->
+	<div id="resultsPage" class="page">
+		<h3>采集结果</h3>
+		<div class="level-info">
+			<strong>采集层级：</strong><span id="result-level"></span>
+		</div>
+		<div class="keywords-container">
+			<strong>搜索推荐词：</strong>
+			<div id="result-keywords-list" class="keywords-list"></div>
+		</div>
+		<div class="preview-actions">
+			<button id="export-csv" class="preview-btn">导出CSV</button>
+			<button id="export-mindmap" class="preview-btn">导出思维导图</button>
+			<button class="back-to-input">返回输入页面</button>
+		</div>
 	</div>
 
 	<div id="popup" class="custom-popup">

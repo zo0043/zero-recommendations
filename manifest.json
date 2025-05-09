@@ -38,7 +38,7 @@
 	"web_accessible_resources":
 	[
 		{
-			"resources" : ["css/gpt_keywords_list.css", "js/preview-panel.js", "css/preview-panel.css"],
+			"resources" : ["css/gpt_keywords_list.css", "js/preview-panel.js", "css/preview-panel.css", "extract.html", "js/extract.js"],
 			"matches": [
 				"*://chat.openai.com/*",
 				"*://www.xiaohongshu.com/*",
@@ -54,6 +54,7 @@
 		"storage",
 		"activeTab",
 		"tabs",
-		"scripting"
+		"scripting",
+		"windows"
 	]
 }

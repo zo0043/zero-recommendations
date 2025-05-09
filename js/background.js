@@ -1,4 +1,5 @@
 let collectTag = '';
+
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         console.log(request.type);
         if (request.type === "init_setting")
@@ -18,6 +19,46 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
             chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
                 chrome.tabs.sendMessage(tabs[0].id, {'data':request.data,type:'web_spider_complete'});
             });
+        }
+        // 转发preview_data消息到提取窗口
+        else if(request.type == "preview_data" && request.extractWindowId) {
+            // 查找窗口中的所有标签页
+            chrome.tabs.query({windowId: request.extractWindowId}, function(tabs) {
+                if (tabs && tabs.length > 0) {
+                    // 向提取窗口的标签页发送消息
+                    chrome.tabs.sendMessage(tabs[0].id, {
+                        type: 'preview_data',
+                        data: request.data
+                    });
+                }
+            });
+            if (sendResponse) {
+                sendResponse({status: 'success', message: '已转发到提取窗口'});
+            }
+        }
+        // 提取窗口创建后的初始化消息
+        else if(request.type == "extract_window_ready") {
+            chrome.storage.local.get(['current_extraction', 'active_tab_id'], function(data) {
+                if (data.current_extraction && data.active_tab_id) {
+                    // 更新提取窗口ID
+                    if (sender.tab && sender.tab.windowId) {
+                        data.current_extraction.windowId = sender.tab.windowId;
+                        chrome.storage.local.set({ 'current_extraction': data.current_extraction });
+                    }
+                    
+                    // 向内容脚本发送提取请求
+                    chrome.tabs.sendMessage(data.active_tab_id, {
+                        type: data.current_extraction.type,
+                        keywords: data.current_extraction.keywords,
+                        level: data.current_extraction.level,
+                        showPreview: false,
+                        extractWindowId: sender.tab.windowId
+                    });
+                }
+            });
+            if (sendResponse) {
+                sendResponse({status: 'success', message: '提取窗口初始化完成'});
+            }
         }
     }
 );
