@@ -1,35 +1,55 @@
 ﻿let keywords = '';
 let submitButton;
 let toolType = '';
-let createPrompt = '';
+
+// 存储预览数据
+let previewData = null;
 
 // 监听来自content-script的采集结果
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (request.type === 'preview_data') {
         console.log('收到预览数据:', request.data);
-        // 显示预览面板
-        showPreviewPanel(request.data);
+        
+        // 存储预览数据
+        previewData = request.data;
+        
+        // 隐藏提取状态，显示展示结果按钮
+        document.getElementById('extraction-status').style.display = 'none';
+        document.getElementById('show-results').style.display = 'block';
+        
         // 启用提交按钮
         if (submitButton) {
             submitButton.disabled = false;
         }
+        
         // 发送响应确认收到数据
         if (sendResponse) {
             sendResponse({status: 'success', message: '预览数据已接收'});
         }
-        // 将预览数据转发回content-script以在页面中显示预览面板
-        chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-            chrome.tabs.sendMessage(tabs[0].id, { 
-                type: 'show_preview_panel',
-                data: request.data
-            });
-        });
     }
 });
 
 document.addEventListener('DOMContentLoaded', function () {
+    // 添加展示结果按钮点击事件
+    document.getElementById('show-results').addEventListener('click', function() {
+        if (previewData) {
+            // 将预览数据转发回content-script以在页面中显示预览面板
+            chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+                chrome.tabs.sendMessage(tabs[0].id, { 
+                    type: 'show_preview_panel',
+                    data: previewData
+                });
+            });
+        }
+    });
+    
     // 加载采集层级设置
     chrome.storage.local.get('setting', function (data) {
+        // 确保data.setting存在，避免TypeError
+        if (!data || !data.setting) {
+            data = { setting: {} };
+        }
+        
         if (data.setting && data.setting.level) {
             const currentLevel = data.setting.level;
             const radioToCheck = document.querySelector('input[name="level"][value="' + currentLevel + '"]');
@@ -37,7 +57,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 radioToCheck.checked = true;
             }
         }
-        createPrompt = (typeof data.setting.create_prompt !== 'undefined') ? data.setting.create_prompt : '';
         // 在这里使用存储的值
         chrome.runtime.sendMessage({"type":"init_setting","setting":data.setting}, function (response) {
             console.log(response.farewell)
@@ -60,7 +79,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     // 获取存储的值
     chrome.storage.local.get('setting', function (data) {
-        createPrompt = (typeof data.setting.create_prompt !== 'undefined') ? data.setting.create_prompt : '';
+        // 确保data.setting存在，避免TypeError
+        if (!data || !data.setting) {
+            data = { setting: {} };
+        }
+        
         // 在这里使用存储的值
         chrome.runtime.sendMessage({"type":"init_setting","setting":data.setting}, function (response) {
             console.log(response.farewell)
@@ -126,13 +149,17 @@ function sendSearchMessage()
     // 获取当前采集层级
     const selectedLevel = document.querySelector('input[name="level"]:checked').value;
     
+    // 显示提取状态
+    document.getElementById('extraction-status').style.display = 'block';
+    document.getElementById('status-text').textContent = '提取中...';
+    
     // 向 content-scripts.js 发送消息，包含关键词信息
     chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { 
             keywords: keywords,
             type: toolType,
             level: selectedLevel,
-            showPreview: true
+            showPreview: false // 修改为false，不自动显示预览面板
         });
     });
 }
@@ -164,12 +191,7 @@ $("#pga_submit").click(function (){
         submitButton.disabled = false;
         return;
     }
-    else if(createPrompt == '')
-    {
-        showPopup("没有配置生成prompt,请点击右上角设置！");
-        submitButton.disabled = false;
-        return;
-    }
+    // 移除了createPrompt相关检查
     chrome.storage.local.set({ 'pga_keywords': keywords }, function() {
         sendSearchMessage();
     });

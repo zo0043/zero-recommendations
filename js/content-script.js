@@ -10,6 +10,28 @@ let kwIndex = 0;
 	let currentKeywords = "",currentKeywordsAliasTitle = '';
 	let showPreview = false;
 
+	// 监听来自popup的消息
+	chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+		if (request.type === 'show_preview_panel' && request.data) {
+			// 确保预览面板脚本已加载，然后显示预览面板
+			ensurePreviewPanelLoaded(function(error) {
+				if (error) {
+					console.error('Error loading preview panel:', error.message);
+					return;
+				}
+				// 显示预览面板
+				if (typeof showPreviewPanel === 'function') {
+					showPreviewPanel(request.data);
+				} else {
+					console.error('showPreviewPanel still not available after ensurePreviewPanelLoaded callback.');
+				}
+			});
+			if (sendResponse) {
+				sendResponse({status: 'success', message: '预览面板已显示'});
+			}
+		}
+	});
+
 	// For preview panel loading
 	let isPreviewPanelScriptInjected = false;
 	let isPreviewPanelScriptLoaded = false;
@@ -28,23 +50,9 @@ let kwIndex = 0;
 	        data: previewData
 	    });
 
-	    // 同时在当前页面显示预览面板, 前提是 showPreview 为 true
+	    // 如果 showPreview 为 true，则直接显示预览面板
 	    if (showPreview) {
-	        ensurePreviewPanelLoaded(function(error) { // Changed from loadPreviewPanelScript
-	            if (error) {
-	                console.error('Error loading preview panel:', error.message);
-	                return;
-	            }
-	            // At this point, showPreviewPanel should be available
-	            if (typeof showPreviewPanel === 'function') {
-	                showPreviewPanel(previewData);
-	            } else {
-	                // This should ideally not happen if ensurePreviewPanelLoaded works
-	                console.error('showPreviewPanel still not available after ensurePreviewPanelLoaded callback.');
-	            }
-	        });
-	    } else {
-	        // console.log('Preview is disabled by showPreview flag. Not showing panel.');
+	        showPreviewPanel(previewData);
 	    }
 	}
 	
@@ -123,7 +131,7 @@ let kwIndex = 0;
 	let statusMap = {0:"未处理",1:"已生成",2:"已发布",3:"生成中",4:"排队中",5:"采集完"};
 	let statusColorClassMap = {0:'unresolved',1:'generated',2:'published',3:'generating',4:'queuing',5:'collect_completed'};
 	let generateArticleTime = 0,generateArticleStartTime = 0;
-	let createPrompt = '',cleanPrompt = '';
+	
 	const downloadMarkdown = (content) => {
 		const element = document.createElement('a');
 		const file = new Blob([content], {type: 'text/markdown'});
@@ -523,16 +531,18 @@ let kwIndex = 0;
 			let prompt_button = document.querySelector('#prompt-textarea + button');
 			if(type ==1)
 			{
-				let prompt = createPrompt;//"你接下来会作为我的写作助手，围绕提供的关键词生成文章标题和文章内容，每篇文章不低于1500字，全部内容输出以'[START:keywords]'标签开始，'[END:keywords]'标签结束，keywords替换为我提供的关键词，文章标题放在'[TITLE]'标签和'[/TITLE]'标签中间，文章标题和文章内容都以纯文本形式输出，不包含任何特殊格式或标记，这样的格式可以方便我后面轻松地进行文本处理和提取关键信息。现在我提供的关键词是：```{keywords}```"
+				let prompt = "";
 				if(checkIsUrl(currentKeywords))
 				{
-					prompt = cleanPrompt;
+					prompt = '';
 					prompt = prompt.replace(/{url}/g, currentKeywords);
 					prompt = prompt.replace("{content}", data);
 				}
 				else
 				{
-					prompt = prompt.replace("{keywords}", currentKeywords);
+					// 由于移除了createPrompt，这里不再处理非URL的情况
+					console.log("createPrompt已被移除，无法处理非URL的情况");
+					return;
 				}
 				inputDispatchEventEvent(prompt_textarea, prompt);
 				setTimeout(function (){
@@ -958,10 +968,15 @@ let kwIndex = 0;
 		});
 
 		chrome.storage.local.get('setting', function (data) {
+			// 确保data.setting存在，避免TypeError
+			if (!data || !data.setting) {
+				data = { setting: {} };
+			}
+			
 			createPrompt = (typeof data.setting.create_prompt !== 'undefined') ? data.setting.create_prompt : '';
-			cleanPrompt = (typeof data.setting.clean_prompt !== 'undefined') ? data.setting.clean_prompt : '';
+			
 			collectLevel = (typeof data.setting.level !== 'undefined') ? parseInt(data.setting.level, 10) : 1;
-			console.log(createPrompt,cleanPrompt);
+			console.log('Setting initialized');
 			chrome.runtime.sendMessage({"type":"init_setting","setting":data.setting}, function (response) {
 				console.log(response.farewell)
 			});
@@ -1107,6 +1122,10 @@ let kwIndex = 0;
 			addStylesheet("css/gpt_keywords_list.css"); // 替换为您的CSS文件路径
 		}
 		chrome.storage.local.get('setting', function (data) {
+			// 确保data.setting存在，避免TypeError
+			if (!data || !data.setting) {
+				data = { setting: {} };
+			}
 			collectLevel = (typeof data.setting.level !== 'undefined') ? parseInt(data.setting.level, 10) : 1;
 			console.log("采集层级：" + collectLevel);
 			chrome.runtime.sendMessage({"type":"init_setting","setting":data.setting}, function (response) {

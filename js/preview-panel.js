@@ -3,7 +3,7 @@
  */
 
 // 创建预览面板
-function createPreviewPanel() {
+window.createPreviewPanel = function() {
     // 检查是否已存在预览面板
     if (document.getElementById('preview-panel')) {
         return document.getElementById('preview-panel');
@@ -88,7 +88,7 @@ function createPreviewPanel() {
 }
 
 // 显示预览面板
-function showPreviewPanel(data) {
+window.showPreviewPanel = function(data) {
     const panel = createPreviewPanel();
     panel.style.display = 'block';
     
@@ -112,7 +112,7 @@ function showPreviewPanel(data) {
 }
 
 // 导出为CSV
-function exportToCsv() {
+window.exportToCsv = function() {
     // 从页面获取数据
     chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { type: 'export_csv' });
@@ -120,7 +120,7 @@ function exportToCsv() {
 }
 
 // 导出为思维导图
-function exportToMindmap() {
+window.exportToMindmap = function() {
     // 从页面获取数据
     chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { type: 'export_mindmap' });
