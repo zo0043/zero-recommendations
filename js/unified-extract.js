@@ -355,13 +355,38 @@ function showResults(data) {
     
     if (data.keywords && data.keywords.length > 0) {
         data.keywords.forEach(keyword => {
+            const level = keyword[0]; // 级别
+            const text = keyword[1];  // 关键词文本
+            
             const keywordItem = document.createElement('div');
             keywordItem.className = 'keyword-item';
-            keywordItem.textContent = keyword[1]; // 关键词格式为 [level, keyword]
+            
+            // 创建级别指示器
+            const levelIndicator = document.createElement('span');
+            levelIndicator.className = `keyword-level level-${level}`;
+            levelIndicator.textContent = level;
+            
+            // 创建关键词内容
+            const keywordContent = document.createElement('span');
+            keywordContent.className = 'keyword-content';
+            keywordContent.textContent = text;
+            
+            // 添加到项目中
+            keywordItem.appendChild(levelIndicator);
+            keywordItem.appendChild(keywordContent);
+            
             keywordsList.appendChild(keywordItem);
         });
     } else {
-        keywordsList.innerHTML = '<div class="keyword-item">暂无采集结果</div>';
+        const emptyItem = document.createElement('div');
+        emptyItem.className = 'keyword-item';
+        
+        const emptyContent = document.createElement('span');
+        emptyContent.className = 'keyword-content';
+        emptyContent.textContent = '暂无采集结果';
+        
+        emptyItem.appendChild(emptyContent);
+        keywordsList.appendChild(emptyItem);
     }
 }
 
@@ -403,12 +428,12 @@ function exportMindmap() {
 // 显示指定页面
 function showPage(pageId) {
     // 隐藏所有页面
-    document.getElementById(PAGES.INPUT).style.display = 'none';
-    document.getElementById(PAGES.STATUS).style.display = 'none';
-    document.getElementById(PAGES.RESULT).style.display = 'none';
+    document.getElementById(PAGES.INPUT).classList.remove('active');
+    document.getElementById(PAGES.STATUS).classList.remove('active');
+    document.getElementById(PAGES.RESULT).classList.remove('active');
     
     // 显示指定页面
-    document.getElementById(pageId).style.display = 'block';
+    document.getElementById(pageId).classList.add('active');
 }
 
 // 显示弹窗

@@ -8,21 +8,27 @@
     <link rel="stylesheet" href="css/popup.css">
     <link rel="stylesheet" href="css/preview-panel.css">
     <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
         body {
             width: 100%;
             min-width: 320px;
             max-width: 550px;
-            padding: 0.25rem;
             margin: 0 auto;
             background-color: var(--bg-color);
-            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 0;
         }
         
         .container {
             width: 100%;
+            height: auto;
             display: flex;
             flex-direction: column;
             background-color: var(--bg-card);
@@ -44,6 +50,7 @@
             width: 28px;
             height: 28px;
             margin-right: 0.75rem;
+            flex-shrink: 0;
         }
         
         .header-title {
@@ -57,6 +64,24 @@
         .page {
             padding: 0.75rem;
             transition: all var(--transition-normal);
+            opacity: 1;
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         /* 输入页面 */
@@ -80,6 +105,7 @@
             box-shadow: var(--shadow-sm);
             transition: all var(--transition-fast);
             font-size: 0.9rem;
+            box-sizing: border-box;
         }
         
         .input-field textarea:focus {
@@ -121,6 +147,7 @@
             color: white;
             transition: all var(--transition-fast);
             cursor: pointer;
+            border: none;
         }
         
         #startExtractionBtn:hover {
@@ -135,13 +162,16 @@
         }
         
         /* 状态页面 */
-        #statusPage {
-            display: none;
+        #statusPage.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
         }
         
         #statusContainer {
-            margin: 0.5rem auto;
-            padding: 1rem;
+            padding: 0.75rem 1rem;
             border-radius: var(--radius-md);
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
@@ -151,6 +181,8 @@
             text-align: center;
             position: relative;
             overflow: hidden;
+            width: 90%;
+            max-width: 280px;
         }
         
         #statusContainer::before {
@@ -171,9 +203,9 @@
         }
         
         .spinner {
-            margin-bottom: 0.75rem;
-            width: 2rem;
-            height: 2rem;
+            margin: 0.5rem auto 0.75rem;
+            width: 2.5rem;
+            height: 2.5rem;
             border: 3px solid rgba(59, 130, 246, 0.3);
             border-radius: 50%;
             border-top-color: var(--primary-color);
@@ -200,17 +232,20 @@
             color: var(--primary-color);
             position: relative;
             z-index: 1;
+            margin-bottom: 0.5rem;
         }
         
         #cancelExtractionBtn {
-            margin-top: 0.75rem;
-            padding: 0.4rem 0.75rem;
+            margin-top: 0.5rem;
+            padding: 0.4rem 1rem;
             border-radius: var(--radius-md);
             background-color: var(--bg-color);
             color: var(--text-color);
             border: 1px solid var(--border-color);
             cursor: pointer;
             font-size: 0.9rem;
+            position: relative;
+            z-index: 1;
         }
         
         #cancelExtractionBtn:hover {
@@ -218,13 +253,14 @@
         }
         
         /* 结果页面 */
-        #resultPage {
-            display: none;
+        #resultPage.active {
+            display: flex;
+            flex-direction: column;
         }
         
         #resultPage h3 {
             margin-top: 0;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
             color: var(--primary-dark);
             font-weight: 600;
             text-align: center;
@@ -234,13 +270,15 @@
         .info-item {
             margin-bottom: 0.5rem;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
         }
         
         .info-item strong {
             min-width: 90px;
             display: inline-block;
             font-size: 0.9rem;
+            padding-top: 0.1rem;
+            flex-shrink: 0;
         }
         
         .info-value {
@@ -253,6 +291,12 @@
             font-size: 0.9rem;
         }
         
+        #sourceKeyword {
+            flex: 1;
+            word-break: break-word;
+            font-size: 0.9rem;
+        }
+        
         .result-list {
             max-height: 200px;
             overflow-y: auto;
@@ -261,6 +305,23 @@
             border-radius: var(--radius-md);
             border: 1px solid var(--border-color);
             background-color: var(--bg-color);
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) var(--bg-color);
+            flex: 1;
+            min-height: 120px;
+        }
+        
+        .result-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .result-list::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        
+        .result-list::-webkit-scrollbar-thumb {
+            background-color: var(--primary-color);
+            border-radius: 6px;
         }
         
         .keyword-item {
@@ -272,6 +333,44 @@
             transition: all var(--transition-fast);
             box-shadow: var(--shadow-sm);
             font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .keyword-level {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-right: 0.5rem;
+            flex-shrink: 0;
+        }
+        
+        .keyword-level.level-1 {
+            background-color: var(--primary-color);
+        }
+        
+        .keyword-level.level-2 {
+            background-color: var(--success);
+        }
+        
+        .keyword-level.level-3 {
+            background-color: var(--warning);
+        }
+        
+        .keyword-level.level-4 {
+            background-color: var(--info);
+        }
+        
+        .keyword-content {
+            flex-grow: 1;
+            word-break: break-word;
         }
         
         .keyword-item:hover {
@@ -284,7 +383,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 0.5rem;
-            margin-top: 0.75rem;
+            margin-top: 0.5rem;
         }
         
         .actions button {
@@ -295,6 +394,7 @@
             border-radius: var(--radius-md);
             font-size: 0.9rem;
             cursor: pointer;
+            border: none;
         }
         
         #exportCSV, #exportMindmap {
@@ -357,7 +457,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background-color: var(--bg-card);
-            padding: 1.25rem;
+            padding: 1rem;
             border-radius: var(--radius-md);
             box-shadow: var(--shadow-lg);
             max-width: 90%;
@@ -376,8 +476,9 @@
         
         /* 响应式调整 */
         @media (max-width: 400px) {
-            body {
-                padding: 0.25rem;
+            .container {
+                height: 100%;
+                border-radius: 0;
             }
             
             .page {
@@ -391,15 +492,50 @@
             .radio-wrapper {
                 flex-wrap: wrap;
             }
+            
+            #statusContainer {
+                padding: 0.6rem;
+                max-width: 270px;
+            }
+            
+            .spinner {
+                width: 2.2rem;
+                height: 2.2rem;
+                margin: 0.3rem auto 0.5rem;
+            }
         }
         
-        @media (min-height: 600px) {
+        @media (max-height: 600px) {
+            body {
+                align-items: flex-start;
+                padding-top: 0.5rem;
+            }
+            
+            .container {
+                height: auto;
+            }
+            
             .result-list {
-                max-height: 250px;
+                max-height: 180px;
+                min-height: 100px;
             }
             
             .input-field textarea {
-                min-height: 80px;
+                min-height: 50px;
+            }
+            
+            #statusPage.active {
+                min-height: 180px;
+            }
+        }
+        
+        @media (min-height: 700px) {
+            .result-list {
+                max-height: 300px;
+            }
+            
+            .input-field textarea {
+                min-height: 100px;
             }
         }
     </style>
@@ -412,7 +548,7 @@
         </div>
         
         <!-- 输入页面 -->
-        <div id="inputPage" class="page">
+        <div id="inputPage" class="page active">
             <div class="input-field">
                 <textarea id="keywords" placeholder="请输入关键词,支持换行输入多关键词,关键词出现占位符{c},自动替换为[A-Z]的推荐词搜索，当前支持抖音、小红书、B站、知乎、百度、google"></textarea>
             </div>
