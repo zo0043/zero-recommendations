@@ -128,6 +128,9 @@
 	        keywords: collectKeywordList
 	    };
         
+        // 在控制台打印待发送的数据结构，方便调试
+        console.log('准备发送的预览数据:', JSON.stringify(previewData));
+        
         // 查找是否有提取窗口ID
         chrome.storage.local.get('current_extraction', function(data) {
             // 更新状态为已完成（如果数据已收集）
@@ -149,7 +152,24 @@
             }, function(response) {
                 // 检查发送消息是否成功
                 if (chrome.runtime.lastError) {
-                    console.error('向统一界面发送数据失败:', chrome.runtime.lastError);
+                    const errorMessage = chrome.runtime.lastError.message || '未知错误';
+                    console.error('向统一界面发送数据失败:', errorMessage);
+                    console.error('错误详情:', JSON.stringify({
+                        message: errorMessage,
+                        error: chrome.runtime.lastError
+                    }));
+                    
+                    // 尝试通过 chrome.storage 保存数据作为备选方案
+                    chrome.storage.local.set({
+                        'last_preview_data': previewData,
+                        'last_preview_timestamp': Date.now()
+                    }, function() {
+                        if (chrome.runtime.lastError) {
+                            console.error('无法保存预览数据到存储:', chrome.runtime.lastError.message);
+                        } else {
+                            console.log('预览数据已保存到存储作为备选');
+                        }
+                    });
                 } else {
                     console.log('向统一界面发送数据成功, 响应:', response);
                 }

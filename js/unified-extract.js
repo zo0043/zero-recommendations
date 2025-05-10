@@ -294,28 +294,46 @@ function checkExtractionStatus() {
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     console.log('统一提取界面收到消息:', request);
     
-    if (request.type === 'preview_data') {
-        console.log('收到预览数据:', request.data);
-        
-        // 清除超时计时器
-        if (extractionTimeout) {
-            clearTimeout(extractionTimeout);
-            extractionTimeout = null;
+    try {
+        if (request.type === 'preview_data') {
+            console.log('收到预览数据:', JSON.stringify(request.data));
+            
+            // 检查数据结构是否符合预期
+            if (!request.data || typeof request.data !== 'object') {
+                console.error('收到的预览数据结构不正确:', request.data);
+                if (sendResponse) {
+                    sendResponse({status: 'error', message: '数据结构不正确'});
+                }
+                return true;
+            }
+            
+            // 清除超时计时器
+            if (extractionTimeout) {
+                clearTimeout(extractionTimeout);
+                extractionTimeout = null;
+            }
+            
+            // 更新提取状态
+            if (extractionData) {
+                extractionData.status = 'completed';
+                extractionData.result = request.data;
+                chrome.storage.local.set({ 'current_extraction': extractionData }, function() {
+                    console.log('预览数据已保存到 current_extraction');
+                });
+            }
+            
+            // 显示结果
+            showResults(request.data);
+            
+            // 发送响应确认收到数据
+            if (sendResponse) {
+                sendResponse({status: 'success', message: '预览数据已接收'});
+            }
         }
-        
-        // 更新提取状态
-        if (extractionData) {
-            extractionData.status = 'completed';
-            extractionData.result = request.data;
-            chrome.storage.local.set({ 'current_extraction': extractionData });
-        }
-        
-        // 显示结果
-        showResults(request.data);
-        
-        // 发送响应确认收到数据
+    } catch (error) {
+        console.error('处理消息时出错:', error);
         if (sendResponse) {
-            sendResponse({status: 'success', message: '预览数据已接收'});
+            sendResponse({status: 'error', message: '处理消息时出错: ' + error.message});
         }
     }
     

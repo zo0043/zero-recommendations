@@ -21,19 +21,60 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
             });
         }
         // 转发preview_data消息到提取窗口
-        else if(request.type == "preview_data" && request.extractWindowId) {
-            // 查找窗口中的所有标签页
-            chrome.tabs.query({windowId: request.extractWindowId}, function(tabs) {
-                if (tabs && tabs.length > 0) {
-                    // 向提取窗口的标签页发送消息
-                    chrome.tabs.sendMessage(tabs[0].id, {
-                        type: 'preview_data',
-                        data: request.data
+        else if(request.type == "preview_data") {
+            console.log('Background收到预览数据:', request);
+            
+            // 如果指定了提取窗口ID，向提取窗口发送消息
+            if (request.extractWindowId) {
+                // 查找窗口中的所有标签页
+                chrome.tabs.query({windowId: request.extractWindowId}, function(tabs) {
+                    if (tabs && tabs.length > 0) {
+                        // 向提取窗口的标签页发送消息
+                        chrome.tabs.sendMessage(tabs[0].id, {
+                            type: 'preview_data',
+                            data: request.data
+                        }, function(resp) {
+                            if (chrome.runtime.lastError) {
+                                console.error('向提取窗口发送消息失败:', chrome.runtime.lastError.message);
+                            } else {
+                                console.log('向提取窗口发送消息成功:', resp);
+                            }
+                        });
+                    } else {
+                        console.error('找不到提取窗口的标签页');
+                    }
+                });
+            } 
+            // 没有指定提取窗口ID，尝试向popup发送消息
+            else {
+                try {
+                    // 查找当前活动的标签页
+                    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                        if (tabs && tabs.length > 0) {
+                            // 将消息传递给当前标签页的content-script
+                            chrome.tabs.sendMessage(tabs[0].id, {
+                                type: 'show_preview_panel',
+                                data: request.data
+                            }, function(resp) {
+                                if (chrome.runtime.lastError) {
+                                    console.error('向当前标签页发送消息失败:', chrome.runtime.lastError.message);
+                                }
+                            });
+                        }
                     });
+                    
+                    // 即使找不到活动标签页，也尝试将数据保存到storage
+                    chrome.storage.local.set({
+                        'last_preview_data': request.data,
+                        'last_preview_timestamp': Date.now()
+                    });
+                } catch (error) {
+                    console.error('处理preview_data消息出错:', error);
                 }
-            });
+            }
+            
             if (sendResponse) {
-                sendResponse({status: 'success', message: '已转发到提取窗口'});
+                sendResponse({status: 'success', message: '已处理预览数据'});
             }
         }
         // 提取窗口创建后的初始化消息
