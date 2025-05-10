@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>搜索推荐词采集助手</title>
     <link rel="stylesheet" href="css/theme.css">
     <link rel="stylesheet" href="css/popup.css">
@@ -9,17 +10,21 @@
     <style>
         body {
             width: 100%;
-            min-width: 400px;
+            min-width: 320px;
             max-width: 550px;
-            padding: 0.75rem;
+            padding: 0.25rem;
             margin: 0 auto;
             background-color: var(--bg-color);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .container {
+            width: 100%;
             display: flex;
             flex-direction: column;
-            width: 100%;
             background-color: var(--bg-card);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-md);
@@ -29,8 +34,7 @@
         .header {
             display: flex;
             align-items: center;
-            margin-bottom: 0;
-            padding: 0.75rem 1rem;
+            padding: 0.5rem 1rem;
             border-bottom: 1px solid var(--border-color);
             background-color: var(--primary-dark);
             color: white;
@@ -51,7 +55,7 @@
 
         /* 页面容器 */
         .page {
-            padding: 1rem;
+            padding: 0.75rem;
             transition: all var(--transition-normal);
         }
         
@@ -61,16 +65,16 @@
         }
         
         .input-field {
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
         }
         
         .input-field textarea {
             width: 100%;
             resize: vertical;
-            min-height: 80px;
-            margin-bottom: 0.75rem;
+            min-height: 60px;
+            margin-bottom: 0.5rem;
             border-radius: var(--radius-md);
-            padding: 0.75rem;
+            padding: 0.5rem;
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
             box-shadow: var(--shadow-sm);
@@ -83,8 +87,8 @@
         }
         
         .level-selector {
-            margin-bottom: 1rem;
-            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
             border-radius: var(--radius-md);
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
@@ -92,7 +96,7 @@
         
         .level-selector .label {
             display: block;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
             font-weight: 500;
             color: var(--text-color);
             font-size: 0.9rem;
@@ -100,7 +104,7 @@
         
         .radio-wrapper {
             display: flex;
-            gap: 1rem;
+            gap: 0.75rem;
         }
         
         .radio-wrapper label {
@@ -110,7 +114,7 @@
         
         #startExtractionBtn {
             width: 100%;
-            padding: 0.75rem;
+            padding: 0.6rem;
             font-weight: 600;
             border-radius: var(--radius-md);
             background-color: var(--primary-color);
@@ -136,8 +140,8 @@
         }
         
         #statusContainer {
-            margin: 1rem auto;
-            padding: 1.5rem 1rem;
+            margin: 0.5rem auto;
+            padding: 1rem;
             border-radius: var(--radius-md);
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
@@ -167,7 +171,7 @@
         }
         
         .spinner {
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
             width: 2rem;
             height: 2rem;
             border: 3px solid rgba(59, 130, 246, 0.3);
@@ -199,8 +203,8 @@
         }
         
         #cancelExtractionBtn {
-            margin-top: 1rem;
-            padding: 0.5rem 1rem;
+            margin-top: 0.75rem;
+            padding: 0.4rem 0.75rem;
             border-radius: var(--radius-md);
             background-color: var(--bg-color);
             color: var(--text-color);
@@ -220,7 +224,7 @@
         
         #resultPage h3 {
             margin-top: 0;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
             color: var(--primary-dark);
             font-weight: 600;
             text-align: center;
@@ -250,9 +254,9 @@
         }
         
         .result-list {
-            max-height: 250px;
+            max-height: 200px;
             overflow-y: auto;
-            margin: 0.75rem 0;
+            margin: 0.5rem 0;
             padding: 0.5rem;
             border-radius: var(--radius-md);
             border: 1px solid var(--border-color);
@@ -260,8 +264,8 @@
         }
         
         .keyword-item {
-            padding: 0.5rem 0.75rem;
-            margin-bottom: 0.5rem;
+            padding: 0.4rem 0.6rem;
+            margin-bottom: 0.4rem;
             border-radius: var(--radius-md);
             background-color: var(--bg-card);
             border-left: 3px solid var(--primary-color);
@@ -280,13 +284,13 @@
             display: flex;
             flex-wrap: wrap;
             gap: 0.5rem;
-            margin-top: 1rem;
+            margin-top: 0.75rem;
         }
         
         .actions button {
             flex: 1;
-            min-width: 100px;
-            padding: 0.5rem 0.75rem;
+            min-width: 90px;
+            padding: 0.4rem 0.6rem;
             font-weight: 500;
             border-radius: var(--radius-md);
             font-size: 0.9rem;
@@ -353,31 +357,49 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background-color: var(--bg-card);
-            padding: 1.5rem;
+            padding: 1.25rem;
             border-radius: var(--radius-md);
             box-shadow: var(--shadow-lg);
-            max-width: 80%;
+            max-width: 90%;
             text-align: center;
         }
         
         .custom-popup-question {
             display: block;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
             font-weight: 500;
         }
         
         .custom-popup-close-btn {
-            padding: 0.5rem 1.5rem;
+            padding: 0.4rem 1.25rem;
         }
         
         /* 响应式调整 */
-        @media (max-width: 576px) {
+        @media (max-width: 400px) {
             body {
+                padding: 0.25rem;
+            }
+            
+            .page {
                 padding: 0.5rem;
             }
             
             .actions {
                 flex-direction: column;
+            }
+            
+            .radio-wrapper {
+                flex-wrap: wrap;
+            }
+        }
+        
+        @media (min-height: 600px) {
+            .result-list {
+                max-height: 250px;
+            }
+            
+            .input-field textarea {
+                min-height: 80px;
             }
         }
     </style>
