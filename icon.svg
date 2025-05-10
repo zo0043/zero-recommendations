@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- 背景 - 渐变明亮背景 -->
-  <rect width="128" height="128" rx="24" fill="url(#tech_gradient)" />
+  <!-- 背景 - 更浅的蓝色渐变背景 -->
+  <rect width="128" height="128" rx="24" fill="url(#light_tech_gradient)" />
   
   <!-- 主要搜索图标元素 -->
   <g filter="url(#glow_effect)">
     <!-- 搜索镜图标元素 -->
-    <circle cx="53" cy="53" r="22" stroke="#00EEFF" stroke-width="4" stroke-opacity="0.9">
+    <circle cx="53" cy="53" r="22" stroke="#00B8FF" stroke-width="4" stroke-opacity="0.9">
       <animate attributeName="stroke-opacity" values="0.9;1;0.9" dur="3s" repeatCount="indefinite" />
     </circle>
-    <line x1="69" y1="69" x2="87" y2="87" stroke="#00EEFF" stroke-width="4" stroke-linecap="round" stroke-opacity="0.9">
+    <line x1="69" y1="69" x2="87" y2="87" stroke="#00B8FF" stroke-width="4" stroke-linecap="round" stroke-opacity="0.9">
       <animate attributeName="stroke-opacity" values="0.9;1;0.9" dur="3s" repeatCount="indefinite" />
     </line>
     
@@ -58,17 +58,17 @@
   </g>
   
   <!-- 中心光效 -->
-  <circle cx="53" cy="53" r="10" fill="#00EEFF" fill-opacity="0.25">
+  <circle cx="53" cy="53" r="10" fill="#00E0FF" fill-opacity="0.18">
     <animate attributeName="r" values="10;12;10" dur="4s" repeatCount="indefinite" />
-    <animate attributeName="fill-opacity" values="0.2;0.4;0.2" dur="4s" repeatCount="indefinite" />
+    <animate attributeName="fill-opacity" values="0.15;0.28;0.15" dur="4s" repeatCount="indefinite" />
   </circle>
   
   <!-- 渐变和滤镜定义 -->
   <defs>
-    <linearGradient id="tech_gradient" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#1A3C8C" />
-      <stop offset="0.5" stop-color="#0C2D6A" />
-      <stop offset="1" stop-color="#061842" />
+    <linearGradient id="light_tech_gradient" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e3f3ff" />
+      <stop offset="0.5" stop-color="#b3e6ff" />
+      <stop offset="1" stop-color="#a7e8ff" />
     </linearGradient>
     <filter id="glow_effect" x="-10" y="-10" width="148" height="148" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
       <feFlood flood-opacity="0" result="BackgroundImageFix" />
