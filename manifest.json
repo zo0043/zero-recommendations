@@ -38,7 +38,7 @@
 	"web_accessible_resources":
 	[
 		{
-			"resources" : ["css/gpt_keywords_list.css", "js/preview-panel.js", "css/preview-panel.css", "extract.html", "js/extract.js", "unified-extract.html", "js/unified-extract.js"],
+			"resources" : ["css/gpt_keywords_list.css", "js/preview-panel.js", "css/preview-panel.css", "css/feedback.css", "extract.html", "js/extract.js", "unified-extract.html", "js/unified-extract.js", "js/unified-extract-optimized.js", "js/state-manager.js", "js/feedback-manager.js", "js/performance-utils.js", "popup.html", "js/popup-optimized.js"],
 			"matches": [
 				"*://chat.openai.com/*",
 				"*://www.xiaohongshu.com/*",
